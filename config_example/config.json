@@ -16,6 +16,7 @@
 			}
 		}
 		,"homeRoute": "/broker"
+		,"sendConfirmTimeoutMS": 20000
 	}
 	,"msgBroker":
 	{

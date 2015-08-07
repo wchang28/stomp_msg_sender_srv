@@ -9,6 +9,9 @@ var Stomp = require('stompjs2');
 var smb = require('stomp_msg_broker');
 var StompMsgBroker = smb.StompMsgBroker;
 
+var DEFAULT_HOME_ROUTE = '/'
+var DEFAULT_SEND_CONFIRM_TIMEOUT_MS = 20000;
+
 // argv[2] is the config file
 if (process.argv.length < 3) {
 	console.error('config file is not optional');
@@ -46,40 +49,35 @@ var broker = new StompMsgBroker(function() {return Stomp.client(brokerConfig.url
 
 // set up the service home route
 //////////////////////////////////////////////////////////////////////////////////////
-var homeRoutePath = (typeof restConfig.homeRoute === 'string' && restConfig.homeRoute.length > 0 ? restConfig.homeRoute : '/');
+var homeRoutePath = (typeof restConfig.homeRoute === 'string' && restConfig.homeRoute.length > 0 ? restConfig.homeRoute : DEFAULT_HOME_ROUTE);
+var sendConfirmTimeoutMS = (typeof restConfig.sendConfirmTimeoutMS === 'number' ? restConfig.sendConfirmTimeoutMS : DEFAULT_SEND_CONFIRM_TIMEOUT_MS);
 var router = express.Router();
 router.use(function (req, res, next) {
 	console.log('an incomming request @ ' + homeRoutePath + '. Time: ', Date.now());
-	function retunException(e) {
-		res.json({"exception":e.toString()});
-	}
+	res.set('Content-Type', 'application/json');
+	function returnException(e) {res.json({"exception": e.toString()});}
 	try {
-		res.set('Content-Type', 'application/json');
 		if (req.method === 'POST') {
 			var destination = req.url;
 			if (destination.substr(destination.length - 1) === '/') destination = destination.substr(0, destination.length - 1);
+			if (destination.length === 0) throw 'bad destination'
 			//console.log(req.body);
 			//console.log(destination);
 			var o = req.body;
-			if (!o || !o.message) {
-				retunException('bad request');
-				return;
-			}
+			if (!o || !o.message)
+				throw 'bad request. no message';
 			else {
-				var timeOut = setTimeout(function() {
-					retunException('timeout. unable to confirm message send');
-				}, 20000);
+				var timeOutObj = setTimeout(function() {returnException('timeout. unable to confirm message send');}, sendConfirmTimeoutMS);
 				broker.send(destination, (o.headers ? o.headers : {}), o.message.toString(), function(recepit_id) {
-					clearTimeout(timeOut);
+					clearTimeout(timeOutObj);
 					res.json({"recepit_id": recepit_id});
 				});
 			}
 		}
-		else {
-			retunException('bad request');
-		}
+		else
+			throw 'bad request. must use POST method';
 	} catch(e) {
-		retunException(e);
+		returnException(e);
 	}
 });
 app.use(homeRoutePath, router);
