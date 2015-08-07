@@ -1,0 +1,39 @@
+{
+	"rest":
+	{
+		"protocols":
+		{
+			"http":
+			{
+				"port": @@HTTPPort@@
+			}
+			,"https":
+			{
+				"port": @@HTTPSPort@@
+				,"private_key": "@@PrivateKeyFile@@"
+				,"certificate": "@@CertificateFile@@"
+				,"ca_files": ["@@CAFile1@@","@@CAFile2@@"]
+			}
+		}
+		,"homeRoute": "/broker"
+	}
+	,"msgBroker":
+	{
+		"url": "@@MsgBrokerUrl@@"
+		,"brokerOptions":
+		{ 
+			"reconnectIntervalMS": 10000
+			,"outgoingHeartBeatMS": 10000
+			,"heartBeatScaleFactor": 0.8
+		}
+		,"loginOptions":
+		{
+			"login": "@@MsgBrokerUserName@@"
+			,"passcode": "@@MsgBrokerPassword@@"
+ 		}
+		,"tlsOptions":
+		{
+			rejectUnauthorized: false
+		}
+	}
+}
