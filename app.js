@@ -36,7 +36,7 @@ if (!brokerConfig) {
 }
 app.use(bodyParser.json());
 
-var basicAuthConfig = brokerConfig.login_options;
+var basicAuthConfig = brokerConfig.loginOptions;	// use broker's login credential as the credential for the HTTP Basic Authentication
 if (basicAuthConfig) app.use(basicAuth(basicAuthConfig.login, basicAuthConfig.passcode));
 	
 app.use(function timeLog(req, res, next) {
