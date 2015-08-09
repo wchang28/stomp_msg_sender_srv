@@ -145,3 +145,7 @@ broker.onconnect = function() {
 		process.exit(1);
 	}
 };
+
+broker.onerror = function(err) {
+	console.error("!!! Error: " + JSON.stringify(err));
+}
