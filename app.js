@@ -47,6 +47,15 @@ app.use(function timeLog(req, res, next) {
 
 var broker = new StompMsgBroker(function() {return Stomp.client(brokerConfig.url, null, brokerConfig.tlsOptions);}, brokerConfig.brokerOptions, brokerConfig.loginOptions, {});
 
+broker.onconnect = function() {
+	var s = 'connected to the msg broker ' + broker.url;
+	console.log(s);
+};
+
+broker.onerror = function(err) {
+	console.error("!!! Error: " + JSON.stringify(err));
+}
+
 // set up the service home route
 //////////////////////////////////////////////////////////////////////////////////////
 var homeRoutePath = (typeof restConfig.homeRoute === 'string' && restConfig.homeRoute.length > 0 ? restConfig.homeRoute : DEFAULT_HOME_ROUTE);
@@ -83,69 +92,61 @@ router.use(function (req, res, next) {
 app.use(homeRoutePath, router);
 //////////////////////////////////////////////////////////////////////////////////////
 
-broker.onconnect = function() {
-	var s = 'connected to the msg broker ' + broker.url;
-	console.log(s);
-	// HTTP
-	//////////////////////////////////////////////////////////////////////////////////////
-	var httpServer = null;
-	if (protocolsConfig["http"]) {
-		var httpConfig = protocolsConfig["http"];
-		if (!httpConfig.port) {
-			console.error('no http port specified');
-			process.exit(1);
-		}
-		var httpServer = http.createServer(app);
-		httpServer.listen(httpConfig.port, function() {
-			var host = httpServer.address().address;
-			var port = httpServer.address().port;
-			console.log('service listening at %s://%s:%s', 'http', host, port);
-		});
-	}
-	//////////////////////////////////////////////////////////////////////////////////////
-
-	// HTTPS
-	//////////////////////////////////////////////////////////////////////////////////////
-	var httpsServer = null;
-	if (protocolsConfig["https"]) {
-		var httpsConfig = protocolsConfig["https"];
-		if (!httpsConfig.port) {
-			console.error('no https port specified');
-			process.exit(1);
-		}
-		if (!httpsConfig.private_key) {
-			console.error('no private key file specified');
-			process.exit(1);
-		}
-		if (!httpsConfig.certificate) {
-			console.error('no certificate file specified');
-			process.exit(1);
-		}	
-		var options = {
-			key: fs.readFileSync(httpsConfig.private_key, 'utf8'),
-			cert: fs.readFileSync(httpsConfig.certificate, 'utf8')	
-		};
-		if (httpsConfig.ca_files && httpsConfig.ca_files.length > 0) {
-			var ca = [];
-			for (var i in httpsConfig.ca_files)
-				ca.push(fs.readFileSync(httpsConfig.ca_files[i], 'utf8'));
-			options.ca = ca;
-		}
-		var httpsServer = https.createServer(options, app);
-		httpsServer.listen(httpsConfig.port, function() {
-			var host = httpsServer.address().address;
-			var port = httpsServer.address().port;
-			console.log('service listening at %s://%s:%s', 'https', host, port);
-		})
-	}
-	//////////////////////////////////////////////////////////////////////////////////////
-
-	if (!httpServer && !httpsServer) {
-		console.error('no web service to run');
+// HTTP
+//////////////////////////////////////////////////////////////////////////////////////
+var httpServer = null;
+if (protocolsConfig["http"]) {
+	var httpConfig = protocolsConfig["http"];
+	if (!httpConfig.port) {
+		console.error('no http port specified');
 		process.exit(1);
 	}
-};
+	var httpServer = http.createServer(app);
+	httpServer.listen(httpConfig.port, function() {
+		var host = httpServer.address().address;
+		var port = httpServer.address().port;
+		console.log('service listening at %s://%s:%s', 'http', host, port);
+	});
+}
+//////////////////////////////////////////////////////////////////////////////////////
 
-broker.onerror = function(err) {
-	console.error("!!! Error: " + JSON.stringify(err));
+// HTTPS
+//////////////////////////////////////////////////////////////////////////////////////
+var httpsServer = null;
+if (protocolsConfig["https"]) {
+	var httpsConfig = protocolsConfig["https"];
+	if (!httpsConfig.port) {
+		console.error('no https port specified');
+		process.exit(1);
+	}
+	if (!httpsConfig.private_key) {
+		console.error('no private key file specified');
+		process.exit(1);
+	}
+	if (!httpsConfig.certificate) {
+		console.error('no certificate file specified');
+		process.exit(1);
+	}	
+	var options = {
+		key: fs.readFileSync(httpsConfig.private_key, 'utf8'),
+		cert: fs.readFileSync(httpsConfig.certificate, 'utf8')	
+	};
+	if (httpsConfig.ca_files && httpsConfig.ca_files.length > 0) {
+		var ca = [];
+		for (var i in httpsConfig.ca_files)
+			ca.push(fs.readFileSync(httpsConfig.ca_files[i], 'utf8'));
+		options.ca = ca;
+	}
+	var httpsServer = https.createServer(options, app);
+	httpsServer.listen(httpsConfig.port, function() {
+		var host = httpsServer.address().address;
+		var port = httpsServer.address().port;
+		console.log('service listening at %s://%s:%s', 'https', host, port);
+	})
+}
+//////////////////////////////////////////////////////////////////////////////////////
+
+if (!httpServer && !httpsServer) {
+	console.error('no web service to run');
+	process.exit(1);
 }
