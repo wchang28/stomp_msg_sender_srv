@@ -77,9 +77,9 @@ router.use(function (req, res, next) {
 				throw 'bad request. no message';
 			else {
 				var timeOutObj = setTimeout(function() {returnException('timeout. unable to confirm message send');}, sendConfirmTimeoutMS);
-				broker.send(destination, (o.headers ? o.headers : {}), o.message.toString(), function(recepit_id) {
+				broker.send(destination, (o.headers ? o.headers : {}), o.message.toString(), function(receipt_id) {
 					clearTimeout(timeOutObj);
-					res.json({"recepit_id": recepit_id});
+					res.json({"receipt_id": receipt_id});
 				});
 			}
 		}
